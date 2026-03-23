@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# Detect container runtime (podman preferred over docker).
+# Source this file to set CONTAINER_CMD.
+# Override by pre-setting CONTAINER_CMD in the environment.
+#
+# Usage:
+#   . ./lib/container_cmd
+#   $CONTAINER_CMD run ...
+
+if [ -z "$CONTAINER_CMD" ]; then
+  if command -v podman &>/dev/null; then
+    CONTAINER_CMD=podman
+  elif command -v docker &>/dev/null; then
+    CONTAINER_CMD=docker
+  else
+    echo -e "${RED}Error: neither podman nor docker found${NC}" >&2
+    exit 1
+  fi
+fi

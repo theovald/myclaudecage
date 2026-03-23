@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750" height="380" viewBox="0 0 750 380">
+  <!-- Host column -->
+  <rect x="10" y="0" width="250" height="375" rx="8" fill="none" stroke="#888" stroke-width="2"/>
+  <text x="135" y="24" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#888">Host machine</text>
+
+  <rect x="25" y="38" width="220" height="34" rx="4" fill="#3b82f6"/>
+  <text x="135" y="60" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">$PWD (project)</text>
+
+  <rect x="25" y="78" width="220" height="34" rx="4" fill="#3b82f6"/>
+  <text x="135" y="100" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">~/.claude</text>
+
+  <rect x="25" y="118" width="220" height="34" rx="4" fill="#3b82f6"/>
+  <text x="135" y="140" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">~/.m2</text>
+
+  <rect x="25" y="158" width="220" height="34" rx="4" fill="#94a3b8"/>
+  <text x="135" y="180" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">~/.gitconfig</text>
+
+  <rect x="25" y="198" width="220" height="34" rx="4" fill="#8b5cf6"/>
+  <text x="135" y="220" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">gh auth token</text>
+
+  <rect x="25" y="238" width="220" height="34" rx="4" fill="#059669"/>
+  <text x="135" y="260" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">Podman socket</text>
+
+  <rect x="25" y="278" width="220" height="34" rx="4" fill="#f4a261"/>
+  <text x="135" y="300" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">~/.ssh (conditional)</text>
+
+  <rect x="25" y="318" width="220" height="34" rx="4" fill="#f4a261"/>
+  <text x="135" y="340" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">SSH_AUTH_SOCK (conditional)</text>
+
+  <!-- Container column -->
+  <rect x="490" y="0" width="250" height="375" rx="8" fill="none" stroke="#888" stroke-width="2"/>
+  <text x="615" y="24" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#888">Container</text>
+
+  <rect x="505" y="38" width="220" height="34" rx="4" fill="#3b82f6"/>
+  <text x="615" y="60" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">/home/user/project</text>
+
+  <rect x="505" y="78" width="220" height="34" rx="4" fill="#3b82f6"/>
+  <text x="615" y="100" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">/home/user/.claude</text>
+
+  <rect x="505" y="118" width="220" height="34" rx="4" fill="#3b82f6"/>
+  <text x="615" y="140" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">/home/user/.m2</text>
+
+  <rect x="505" y="158" width="220" height="34" rx="4" fill="#94a3b8"/>
+  <text x="615" y="180" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">/home/user/.gitconfig</text>
+
+  <rect x="505" y="198" width="220" height="34" rx="4" fill="#8b5cf6"/>
+  <text x="615" y="220" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">GH_TOKEN env var</text>
+
+  <rect x="505" y="238" width="220" height="34" rx="4" fill="#059669"/>
+  <text x="615" y="260" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">DOCKER_HOST socket</text>
+
+  <rect x="505" y="278" width="220" height="34" rx="4" fill="#f4a261"/>
+  <text x="615" y="300" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">/home/user/.ssh</text>
+
+  <rect x="505" y="318" width="220" height="34" rx="4" fill="#f4a261"/>
+  <text x="615" y="340" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">SSH_AUTH_SOCK</text>
+
+  <!-- Arrows -->
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#555"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#059669"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#f4a261"/>
+    </marker>
+  </defs>
+
+  <!-- rw arrows -->
+  <line x1="245" y1="55" x2="505" y2="55" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="375" y="50" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#555">rw</text>
+
+  <line x1="245" y1="95" x2="505" y2="95" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="375" y="90" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#555">rw</text>
+
+  <line x1="245" y1="135" x2="505" y2="135" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="375" y="130" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#555">rw</text>
+
+  <!-- ro arrow -->
+  <line x1="245" y1="175" x2="505" y2="175" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="375" y="170" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#555">ro</text>
+
+  <!-- env arrow -->
+  <line x1="245" y1="215" x2="505" y2="215" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="375" y="210" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#555">env</text>
+
+  <!-- Podman socket arrow -->
+  <line x1="245" y1="255" x2="505" y2="255" stroke="#059669" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <text x="375" y="250" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#059669">socket</text>
+
+  <!-- conditional SSH arrows (dashed) -->
+  <line x1="245" y1="295" x2="505" y2="295" stroke="#f4a261" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow-orange)"/>
+  <text x="375" y="290" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#f4a261">ro (conditional)</text>
+
+  <line x1="245" y1="335" x2="505" y2="335" stroke="#f4a261" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow-orange)"/>
+  <text x="375" y="330" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#f4a261">socket (conditional)</text>
+</svg>

@@ -1,0 +1,13 @@
+# Finn OS-type.
+
+# Denne filen må sources
+
+cygwin=false
+darwin=false
+linux=false
+case "`uname`" in
+CYGWIN*) cygwin=true;;
+MINGW32*) cygwin=true;;
+Darwin*) darwin=true;;
+Linux*) linux=true;;
+esac

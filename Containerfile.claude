@@ -1,0 +1,76 @@
+# Container image for running Claude Code in a sandboxed environment
+# Works on both macOS and Linux
+#
+# Build:  podman build -t claude-sandbox -f Containerfile.claude .
+# Run:    ./claude-container.sh
+
+FROM ubuntu:25.10
+
+ARG USERNAME=devuser
+ENV USERNAME=${USERNAME}
+ARG JAVA_VERSION=
+ARG INSTALL_GO_PYTHON=false
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# --- System tools ---
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash coreutils findutils procps \
+    git git-lfs \
+    curl wget \
+    jq \
+    openssh-client \
+    zip unzip tar gzip \
+    ca-certificates gnupg \
+    patch diffutils \
+    file less \
+    sed gawk \
+    xmlstarlet \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Golang and Python (useful for developing the socket proxy) ---
+RUN if [ "$INSTALL_GO_PYTHON" = "true" ]; then \
+      apt-get update && apt-get install -y --no-install-recommends \
+        golang-go python3 \
+      && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+# --- GitHub CLI ---
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+      | gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+      > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update && apt-get install -y gh \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Node.js 24 LTS ---
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY setup_user.sh /tmp/setup_user.sh
+RUN chmod +x /tmp/setup_user.sh \
+    && /tmp/setup_user.sh ${USERNAME} \
+    && rm /tmp/setup_user.sh
+
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
+
+# --- SDKMAN + Java + Maven ---
+# Adjust JAVA_VERSION at build time:  --build-arg JAVA_VERSION=21.0.5-tem
+# Empty value installs the SDKMAN default (latest LTS)
+RUN curl -s "https://get.sdkman.io" | bash
+RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh \
+    && sdk install java $JAVA_VERSION \
+    && sdk install maven"
+
+# --- Claude Code ---
+RUN curl -fsSL https://claude.ai/install.sh | bash
+ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
+
+COPY --chown=${USERNAME}:${USERNAME} entrypoint.sh /home/${USERNAME}/.entrypoint.sh
+COPY --chown=${USERNAME}:${USERNAME} empty-entrypoint.sh /home/${USERNAME}/.empty-entrypoint.sh
+RUN chmod +x /home/${USERNAME}/.entrypoint.sh \
+    && chmod +x /home/${USERNAME}/.empty-entrypoint.sh
+
+ENTRYPOINT ["/bin/sh", "-c", "exec /home/$USERNAME/.entrypoint.sh \"$@\"", "--"]
