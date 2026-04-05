@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
+#
+# stopAllContainers.sh
+# Stops and removes all currently running Podman containers.
+# Useful if the sandbox or proxy hangs.
+#
 
 SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
-. "$SCRIPT_DIR/lib/os_type"
 . "$SCRIPT_DIR/lib/colors"
 
-. "$SCRIPT_DIR/lib/container_cmd"
+CONTAINER_CMD="podman"
 
 x=$($CONTAINER_CMD ps -q)
 if [ -n "$x" ]; then
