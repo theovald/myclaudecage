@@ -1,4 +1,11 @@
 #!/bin/bash
+#
+# setup_user.sh
+# Script executed during Podman image build to set up the unprivileged
+# user account (matching the host macOS user).
+# Ensure there are no UID 1000 conflicts with base Ubuntu image users.
+#
+
 set -e
 
 USERNAME=$1

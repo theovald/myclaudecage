@@ -1,3 +1,3 @@
-module github.com/kantegamartin/contained-claude/socket-proxy
+module github.com/theovald/myclaudecage/socket-proxy
 
 go 1.22

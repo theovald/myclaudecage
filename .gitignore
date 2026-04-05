@@ -2,4 +2,4 @@
 node_modules/
 dist/
 socket-proxy/socket-proxy
-CurrentPlan.md
+socket-proxy/bin/
