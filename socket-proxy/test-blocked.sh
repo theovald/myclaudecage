@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
-# test-blocked.sh — Verify that known attack vectors are blocked by the socket proxy.
-# Run from inside the sandbox container. All tests should return HTTP 403.
+#
+# test-blocked.sh
+# Verify that known attack vectors are blocked by the socket proxy.
+# Used for security testing. Run from inside the sandbox container.
+# All tests should return HTTP 403 (Forbidden).
+#
+
 set -euo pipefail
 
-SOCK=/tmp/podman.sock
+CURL_SOCK=${DOCKER_HOST:-tcp://host.containers.internal:23750}
+CURL_SOCK=${CURL_SOCK/tcp:/http:}
 PASS=0
 FAIL=0
 
 get_sandbox_id() {
-    curl -sf --unix-socket "$SOCK" http://localhost/containers/json \
+    curl -sf ${CURL_SOCK}/containers/json \
         | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['Id'])"
 }
 
@@ -37,168 +43,168 @@ echo ""
 echo "-- Sandbox container operations --"
 
 check_blocked "Archive READ on sandbox" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/$SANDBOX_ID/archive?path=/etc/hostname"
+    \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/archive?path=/etc/hostname"
 
 check_blocked "Archive WRITE on sandbox" \
-    --unix-socket "$SOCK" -X PUT \
-    "http://localhost/containers/$SANDBOX_ID/archive?path=/tmp" \
+    -X PUT \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/archive?path=/tmp" \
     -H 'Content-Type: application/x-tar' --data-binary @/dev/null
 
 check_blocked "Stop sandbox" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/containers/$SANDBOX_ID/stop"
+    -X POST \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/stop"
 
 check_blocked "Kill sandbox" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/containers/$SANDBOX_ID/kill"
+    -X POST \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/kill"
 
 check_blocked "Restart sandbox" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/containers/$SANDBOX_ID/restart"
+    -X POST \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/restart"
 
 check_blocked "Pause sandbox" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/containers/$SANDBOX_ID/pause"
+    -X POST \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/pause"
 
 check_blocked "Unpause sandbox" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/containers/$SANDBOX_ID/unpause"
+    -X POST \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/unpause"
 
 check_blocked "Delete sandbox" \
-    --unix-socket "$SOCK" -X DELETE \
-    "http://localhost/containers/$SANDBOX_ID"
+    -X DELETE \
+    "${CURL_SOCK}/containers/$SANDBOX_ID"
 
 check_blocked "Exec on sandbox" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/$SANDBOX_ID/exec" \
+    \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/exec" \
     -d '{"Cmd":["id"]}' -H 'Content-Type: application/json'
 
 check_blocked "Logs on sandbox" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/$SANDBOX_ID/logs?stdout=true"
+    \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/logs?stdout=true"
 
 check_blocked "Attach to sandbox" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/containers/$SANDBOX_ID/attach"
+    -X POST \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/attach"
 
 check_blocked "Wait on sandbox" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/containers/$SANDBOX_ID/wait"
+    -X POST \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/wait"
 
 check_blocked "Rename sandbox" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/containers/$SANDBOX_ID/rename?name=pwned"
+    -X POST \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/rename?name=pwned"
 
 check_blocked "Start sandbox" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/containers/$SANDBOX_ID/start"
+    -X POST \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/start"
 
 echo ""
 echo "-- Blocked endpoints (allowlist) --"
 
 check_blocked "Build endpoint" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/build"
+    -X POST \
+    "${CURL_SOCK}/build"
 
 check_blocked "Commit endpoint" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/commit"
+    -X POST \
+    "${CURL_SOCK}/commit"
 
 check_blocked "Plugins endpoint" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/plugins"
+    -X POST \
+    "${CURL_SOCK}/plugins"
 
 check_blocked "Swarm endpoint" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/swarm/init"
+    -X POST \
+    "${CURL_SOCK}/swarm/init"
 
 check_blocked "Services endpoint" \
-    --unix-socket "$SOCK" -X POST \
-    "http://localhost/services/create"
+    -X POST \
+    "${CURL_SOCK}/services/create"
 
 check_blocked "Export sandbox filesystem" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/$SANDBOX_ID/export"
+    \
+    "${CURL_SOCK}/containers/$SANDBOX_ID/export"
 
 echo ""
 echo "-- Dangerous container create options --"
 
 check_blocked "Privileged mode" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"Privileged":true}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "Host PID namespace" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"PidMode":"host"}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "Host network namespace" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"NetworkMode":"host"}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "Host IPC namespace" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"IpcMode":"host"}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "Absolute host path bind mount" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"Binds":["/etc:/mnt/host:ro"]}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "Host bind via Mounts array" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"Mounts":[{"Type":"bind","Source":"/","Target":"/mnt","ReadOnly":true}]}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "SYS_PTRACE capability" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"CapAdd":["SYS_PTRACE"]}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "SYS_ADMIN capability" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"CapAdd":["SYS_ADMIN"]}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "ALL capabilities" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"CapAdd":["ALL"]}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "SecurityOpt seccomp=unconfined" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"SecurityOpt":["seccomp=unconfined"]}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "SecurityOpt apparmor=disabled" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"SecurityOpt":["apparmor=disabled"]}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "Device mappings" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"Devices":[{"PathOnHost":"/dev/null","PathInContainer":"/dev/null"}]}}' \
     -H 'Content-Type: application/json'
 
 check_blocked "Host UTS namespace" \
-    --unix-socket "$SOCK" \
-    "http://localhost/containers/create" \
+    \
+    "${CURL_SOCK}/containers/create" \
     -d '{"Image":"ubuntu:25.10","HostConfig":{"UTSMode":"host"}}' \
     -H 'Content-Type: application/json'
 
@@ -206,20 +212,20 @@ echo ""
 echo "-- Dangerous network drivers --"
 
 check_blocked "macvlan network" \
-    --unix-socket "$SOCK" \
-    "http://localhost/networks/create" \
+    \
+    "${CURL_SOCK}/networks/create" \
     -d '{"Driver":"macvlan","Name":"evil"}' \
     -H 'Content-Type: application/json'
 
 check_blocked "ipvlan network" \
-    --unix-socket "$SOCK" \
-    "http://localhost/networks/create" \
+    \
+    "${CURL_SOCK}/networks/create" \
     -d '{"Driver":"ipvlan","Name":"evil"}' \
     -H 'Content-Type: application/json'
 
 check_blocked "host network driver" \
-    --unix-socket "$SOCK" \
-    "http://localhost/networks/create" \
+    \
+    "${CURL_SOCK}/networks/create" \
     -d '{"Driver":"host","Name":"evil"}' \
     -H 'Content-Type: application/json'
 

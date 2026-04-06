@@ -468,6 +468,31 @@ func TestCheckHostConfig_BlocksUsernsHost(t *testing.T) {
 	}
 }
 
+func TestCheckHostConfig_BlocksUsernsNonChild(t *testing.T) {
+	clearChildren()
+	config := map[string]interface{}{
+		"HostConfig": map[string]interface{}{
+			"UsernsMode": "container:sandbox123",
+		},
+	}
+	if err := checkHostConfig(config); err == nil {
+		t.Error("expected UsernsMode sharing with non-child container to be blocked")
+	}
+}
+
+func TestCheckHostConfig_AllowsUsernsChild(t *testing.T) {
+	clearChildren()
+	registerChild("child456")
+	config := map[string]interface{}{
+		"HostConfig": map[string]interface{}{
+			"UsernsMode": "container:child456",
+		},
+	}
+	if err := checkHostConfig(config); err != nil {
+		t.Errorf("expected UsernsMode sharing with child to be allowed, got: %v", err)
+	}
+}
+
 func TestCheckHostConfig_BlocksSysctls(t *testing.T) {
 	config := map[string]interface{}{
 		"HostConfig": map[string]interface{}{

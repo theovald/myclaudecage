@@ -23,7 +23,7 @@ var validVolumeName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`)
 
 // route defines a single permitted API endpoint.
 type route struct {
-	methods   string         // comma-separated HTTP methods, or "*" for any
+	methods   string         // comma-separated HTTP methods
 	pattern   *regexp.Regexp // must match the full path (after optional version prefix)
 	childOnly bool           // if true, captured group 1 must be a child container ID
 }
@@ -41,7 +41,7 @@ var allowedRoutes = []route{
 	{"GET", p(`/version`), false},
 	{"GET", p(`/info`), false},
 	{"GET", p(`/events`), false},
-	{"GET,HEAD", p(`/system/df`), false},
+	{"GET", p(`/system/df`), false},
 
 	// Images — pull, inspect, list, tag, remove
 	{"POST", p(`/images/create`), false},
@@ -125,13 +125,10 @@ func main() {
 		log.Fatal("No container socket found. Set UPSTREAM_SOCKET.")
 	}
 
-	listenSocket := os.Getenv("LISTEN_SOCKET")
-	if listenSocket == "" {
-		listenSocket = "/tmp/filtered-podman.sock"
+	listenAddr := os.Getenv("LISTEN_ADDR")
+	if listenAddr == "" {
+		listenAddr = "127.0.0.1:23750"
 	}
-
-	// Clean up stale socket file
-	os.Remove(listenSocket)
 
 	proxy := &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
@@ -147,14 +144,12 @@ func main() {
 
 	handler := newHandler(proxy)
 
-	listener, err := net.Listen("unix", listenSocket)
+	listener, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		log.Fatalf("Failed to listen on %s: %v", listenSocket, err)
+		log.Fatalf("Failed to listen on %s: %v", listenAddr, err)
 	}
-	// Make socket accessible inside the container
-	os.Chmod(listenSocket, 0666)
 
-	log.Printf("Socket proxy: %s -> %s (allowlist mode, %d routes)", listenSocket, upstreamSocket, len(allowedRoutes))
+	log.Printf("Socket proxy: %s -> %s (allowlist mode, %d routes)", listenAddr, upstreamSocket, len(allowedRoutes))
 	log.Fatal(http.Serve(listener, handler))
 }
 
@@ -204,9 +199,6 @@ func newHandler(backend http.Handler) http.Handler {
 }
 
 func methodAllowed(allowed, method string) bool {
-	if allowed == "*" {
-		return true
-	}
 	for _, m := range strings.Split(allowed, ",") {
 		if m == method {
 			return true
@@ -239,9 +231,9 @@ func handleContainerCreate(w http.ResponseWriter, r *http.Request, backend http.
 		return // response already written
 	}
 	// Intercept response to track the created container ID
-	recorder := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
+	recorder := &responseRecorder{ResponseWriter: w}
 	backend.ServeHTTP(recorder, r)
-	if recorder.statusCode == http.StatusCreated || recorder.statusCode == http.StatusOK {
+	if recorder.statusCode == http.StatusCreated {
 		var resp struct {
 			Id string `json:"Id"`
 		}
@@ -264,6 +256,7 @@ func handleContainerCreate(w http.ResponseWriter, r *http.Request, backend http.
 // handleNetworkCreate reads the request body, rejects dangerous network drivers,
 // and forwards the request if safe.
 func handleNetworkCreate(w http.ResponseWriter, r *http.Request, backend http.Handler) {
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<20) // 4 MB cap
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "failed to read request body", http.StatusBadRequest)
@@ -292,6 +285,7 @@ func handleNetworkCreate(w http.ResponseWriter, r *http.Request, backend http.Ha
 // filterCreate reads the container create request body, rejects unsafe
 // configurations, and re-attaches the body for forwarding.
 func filterCreate(w http.ResponseWriter, r *http.Request) error {
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<20) // 4 MB cap
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "failed to read request body", http.StatusBadRequest)
@@ -373,8 +367,8 @@ func checkHostConfig(config map[string]interface{}) error {
 	if net, ok := hc["NetworkMode"].(string); ok && net == "host" {
 		return fmt.Errorf("blocked: host network namespace")
 	}
-	if userns, ok := hc["UsernsMode"].(string); ok && userns == "host" {
-		return fmt.Errorf("blocked: host user namespace")
+	if err := checkNamespaceMode(hc, "UsernsMode"); err != nil {
+		return err
 	}
 
 	// Block Sysctls — kernel parameter modification
@@ -441,8 +435,8 @@ func isChildContainer(id string) bool {
 	return createdContainers.ids[id]
 }
 
-// checkNamespaceMode validates PidMode, IpcMode, or UTSMode. Blocks "host" and
-// "container:<id>" unless the target is a child container.
+// checkNamespaceMode validates a namespace mode field (PidMode, IpcMode, UTSMode, UsernsMode).
+// Blocks "host" and "container:<id>" unless the target is a child container.
 func checkNamespaceMode(hc map[string]interface{}, key string) error {
 	val, ok := hc[key].(string)
 	if !ok || val == "" {
@@ -468,15 +462,9 @@ func blocked(w http.ResponseWriter, detail string) {
 func findSocket() string {
 	home := os.Getenv("HOME")
 	candidates := []string{
-		// Linux podman (rootless)
-		fmt.Sprintf("/run/user/%d/podman/podman.sock", os.Getuid()),
-		// macOS podman machine
 		home + "/.local/share/containers/podman/machine/podman.sock",
 		home + "/.local/share/containers/podman/machine/qemu/podman.sock",
 		home + "/.local/share/containers/podman/machine/podman-machine-default/podman.sock",
-		// Docker (Linux and macOS)
-		"/var/run/docker.sock",
-		home + "/.docker/run/docker.sock",
 	}
 	for _, s := range candidates {
 		if _, err := os.Stat(s); err == nil {
