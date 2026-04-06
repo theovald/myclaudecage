@@ -8,13 +8,11 @@
 SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 . "$SCRIPT_DIR/lib/colors"
 
-CONTAINER_CMD="podman"
-
-x=$($CONTAINER_CMD ps -q)
+x=$(podman ps -q)
 if [ -n "$x" ]; then
-  $CONTAINER_CMD stop $x
+  podman stop $x
 fi
-x=$($CONTAINER_CMD ps --all -q)
+x=$(podman ps --all -q)
 if [ -n "$x" ]; then
-  $CONTAINER_CMD rm -f $x
+  podman rm -f $x
 fi
