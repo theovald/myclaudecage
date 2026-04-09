@@ -18,11 +18,22 @@ We use `ubuntu:25.10` as the base image. While larger than Alpine, Ubuntu provid
 
 ```bash
 gh repo clone theovald/myclaudecage
-cd <your-work-folder>
-~/myclaudecage/claude-container.sh
 ```
 
-The image is built automatically on the first run. Because you're inside a container, Claude can't open your browser for OAuth — copy the `claude.ai/oauth/authorize` link from the terminal and open it manually. If the URL wraps across lines, use `./open_url.sh 'URL_HERE'`.
+Add an alias to your shell profile:
+
+```bash
+alias myclaude="/path/to/myclaudecage/claude-container.sh"
+```
+
+Then run from any project directory:
+
+```bash
+cd <your-work-folder>
+myclaude
+```
+
+The image is built automatically on the first run. Because you're inside a container, Claude can't open your browser for OAuth — copy the `claude.ai/oauth/authorize` link from the terminal and open it manually. If the URL wraps across lines, use `/path/to/myclaudecage/open_url.sh 'URL_HERE'`.
 
 ## Options
 
@@ -36,15 +47,16 @@ The image is built automatically on the first run. Because you're inside a conta
 
 Example:
 ```bash
-./claude-container.sh -p "run the fastapi server"
+myclaude -p "run the fastapi server"
 ```
 
 ## What's mounted
 
 - Your working directory — the only code Claude can see
 - `~/.claude` — persistent session history
-- `~/.claude.json` — Claude config (with backup)
-- `~/.gitconfig` — read-only, copied in at startup
+- `~/.claude.json` — Claude config
+- `~/.claude.json.backup` — backup created on first run
+- `~/.gitconfig` — read-only; only `user.name` and `user.email` are applied inside the container (credential helpers and hooks are excluded)
 - `claude-uv-cache` volume — isolated Python package cache
 - Ports `3000`, `4200`, `5005`, `8000`, `8080` — mapped if free on the host
 
@@ -74,6 +86,8 @@ The proxy blocks by default and only forwards a strict allowlist of API endpoint
 **GitHub token scope**: Run with `--no-token` if you don't want Claude to push branches or create PRs.
 
 ## Cleanup
+
+Run from the myclaudecage repo directory:
 
 ```bash
 ./stopAllContainers.sh    # Stop all running containers
