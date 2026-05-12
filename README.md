@@ -4,6 +4,8 @@ Run Claude Code in a sandboxed Podman environment optimized for **Python (uv) an
 
 Claude Code reads your code to understand your project and generate pull requests — but it can also read your documents, secrets, and keys if they're on disk. This sandbox isolates Claude to your designated working directory while still letting it edit code, run tests, and interact with GitHub.
 
+> **Helt fersk på Terminal?** Se [KOMME-I-GANG.md](./KOMME-I-GANG.md) — en steg-for-steg-guide på norsk for deg som aldri har brukt Terminal før.
+
 ### Why Ubuntu?
 
 We use `ubuntu:25.10` as the base image. While larger than Alpine, Ubuntu provides maximum compatibility with development toolchains, Python build dependencies, Node.js binaries, and `glibc`-linked tools like the Claude Code CLI.
