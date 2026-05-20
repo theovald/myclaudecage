@@ -41,6 +41,36 @@ for arg in "$@"; do
     *) CLAUDE_ARGS+=("$arg") ;;
   esac
 done
+
+# --- Guard against mounting $HOME or its ancestors ---
+abs_path() {
+  if [ -d "$1" ]; then
+    (cd "$1" 2>/dev/null && pwd -P)
+  fi
+}
+
+PROJECT_FOLDER_ABS=$(abs_path "$PROJECT_FOLDER")
+if [ -z "$PROJECT_FOLDER_ABS" ]; then
+  echo -e "${RED}Error: project folder '$PROJECT_FOLDER' is not a directory${NC}" >&2
+  exit 1
+fi
+HOME_ABS=$(abs_path "$HOME")
+
+if [ "$PROJECT_FOLDER_ABS" = "$HOME_ABS" ] || [ "$PROJECT_FOLDER_ABS" = "/" ]; then
+  echo -e "${RED}Error: refusing to mount '$PROJECT_FOLDER_ABS' as project folder${NC}" >&2
+  echo -e "${YELLOW}Pass --folder=/path/to/project to specify a subdirectory.${NC}" >&2
+  exit 1
+fi
+
+case "$HOME_ABS/" in
+  "$PROJECT_FOLDER_ABS"/*)
+    echo -e "${RED}Error: project folder '$PROJECT_FOLDER_ABS' contains \$HOME${NC}" >&2
+    echo -e "${YELLOW}Pass --folder=/path/to/project to specify a subdirectory.${NC}" >&2
+    exit 1
+    ;;
+esac
+
+PROJECT_FOLDER="$PROJECT_FOLDER_ABS"
 PROJECT_NAME="${PROJECT_FOLDER##*/}"
 
 # --- GitHub CLI authentication ---
@@ -70,6 +100,17 @@ mkdir -p "$HOME/.claude" "$HOME/.local/share/uv"
 [ ! -f "$HOME/.claude.json.backup" ] && cp "$HOME/.claude.json" "$HOME/.claude.json.backup"
 
 CHOME="/home/$USERNAME"
+
+# --- Shared agents repository (sibling of project folder) ---
+AGENTS_FOLDER_ABS=$(abs_path "$PROJECT_FOLDER/../agents")
+AGENTS_MOUNT_ARG=""
+if [ -z "$AGENTS_FOLDER_ABS" ]; then
+  echo -e "${YELLOW}Warning: '../agents' not found next to project folder, skipping mount.${NC}" >&2
+elif [ "$AGENTS_FOLDER_ABS" = "$HOME_ABS" ] || [ "$AGENTS_FOLDER_ABS" = "/" ]; then
+  echo -e "${YELLOW}Warning: '../agents' resolves to '$AGENTS_FOLDER_ABS', skipping mount.${NC}" >&2
+else
+  AGENTS_MOUNT_ARG="-v $AGENTS_FOLDER_ABS:$CHOME/agents"
+fi
 
 # --- Check available ports ---
 CONTAINER_PORTS="3000 4200 5005 8000 8080"
@@ -123,6 +164,7 @@ podman run --rm -it \
   --dns 1.1.1.1 --dns 8.8.8.8 \
   \
   -v "$PROJECT_FOLDER:$CHOME/$PROJECT_NAME" \
+  $AGENTS_MOUNT_ARG \
   \
   -v "$HOME/.claude:$CHOME/.claude" \
   -v "$HOME/.claude.json:$CHOME/.claude.json" \

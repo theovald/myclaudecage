@@ -49,6 +49,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 libxshmfence1 fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
+# --- LibreOffice (headless, for document conversion) ---
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libreoffice-core libreoffice-common \
+    libreoffice-writer libreoffice-calc libreoffice-impress \
+    && rm -rf /var/lib/apt/lists/*
+
 # --- Node.js 24 LTS ---
 RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y nodejs \
