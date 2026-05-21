@@ -157,6 +157,13 @@ if $START_SHELL; then
   SHELL_MODE_ARG="-e SHELL_MODE=1"
 fi
 
+GITCONFIG_MOUNT_ARG=""
+if [ -f "$HOME/.gitconfig" ]; then
+  GITCONFIG_MOUNT_ARG="-v $HOME/.gitconfig:$CHOME/.gitconfig.host:ro"
+else
+  echo -e "${YELLOW}Warning: '$HOME/.gitconfig' not found, skipping mount. Configure git user.name and user.email on the host to import them into the sandbox.${NC}" >&2
+fi
+
 podman run --rm -it \
   --name "$CONTAINER_NAME" \
   --hostname claude-sandbox \
@@ -172,7 +179,7 @@ podman run --rm -it \
   \
   -v "claude-uv-cache:$CHOME/.local/share/uv" \
   \
-  -v "$HOME/.gitconfig:$CHOME/.gitconfig.host:ro" \
+  $GITCONFIG_MOUNT_ARG \
   \
   $PORT_ARGS \
   \
