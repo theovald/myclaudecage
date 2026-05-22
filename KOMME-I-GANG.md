@@ -215,6 +215,48 @@ hjelper den deg med koden i mappen du står i.
 
 ---
 
+## Valgfritt: Bruk en LLM-proxy i stedet for web-innlogging
+
+Hvis du har fått en personlig API-nøkkel til en Anthropic-kompatibel
+proxy (f.eks. en intern firma-gateway), kan du la Claude bruke den
+i stedet for `claude.ai/oauth/authorize`-lenken.
+
+Lag en fil i hjemmemappen din som heter `.claude-llmproxy.env`:
+
+```bash
+nano ~/.claude-llmproxy.env
+```
+
+Lim inn (bytt ut `<domain>`, nøkkelen og `<leverandør-prefiks>` med
+det du har fått oppgitt):
+
+```
+ANTHROPIC_BASE_URL=https://llmproxy.<domain>
+ANTHROPIC_API_KEY=<din-personlige-nøkkel>
+ANTHROPIC_MODEL=<leverandør-prefiks>/claude-opus-4-7
+ANTHROPIC_SMALL_FAST_MODEL=<leverandør-prefiks>/claude-haiku-4-5
+```
+
+Lagre med `Ctrl + O`, `Enter`, og lukk med `Ctrl + X`.
+
+Lås filen så bare du kan lese den:
+
+```bash
+chmod 600 ~/.claude-llmproxy.env
+```
+
+Neste gang du kjører `myclaude` vil den oppdage filen og skrive
+`Using LLM proxy (from /Users/dittnavn/.claude-llmproxy.env)`.
+Da slipper du web-innloggingen.
+
+Vil du tilbake til web-innlogging? Slett eller bytt navn på filen:
+
+```bash
+rm ~/.claude-llmproxy.env
+```
+
+---
+
 ## Når du er ferdig
 
 For å avslutte Claude: skriv `exit` eller trykk `Ctrl + C` to

@@ -81,6 +81,31 @@ The proxy blocks by default and only forwards a strict allowlist of API endpoint
 | Image build / commit | `/build`, `/commit` not in allowlist |
 | Operating on the sandbox itself | Lifecycle/I/O restricted to containers the proxy created |
 
+## Using an LLM proxy instead of web login
+
+Claude Code can be pointed at any Anthropic-compatible proxy (for example an internal corporate gateway at `https://llmproxy.<domain>`) by setting a few environment variables. If you have a personal API key for such a proxy and want to use it instead of the OAuth `/login` flow, drop the following file on the host at `~/.claude-llmproxy.env`:
+
+```
+ANTHROPIC_BASE_URL=https://llmproxy.<domain>
+ANTHROPIC_API_KEY=<your-personal-key>
+ANTHROPIC_MODEL=<provider-prefix>/claude-opus-4-7
+ANTHROPIC_SMALL_FAST_MODEL=<provider-prefix>/claude-haiku-4-5
+```
+
+- `ANTHROPIC_BASE_URL` — proxy host. Claude Code appends `/v1/messages` itself.
+- `ANTHROPIC_API_KEY` — sent as the `x-api-key` header. If your proxy uses bearer auth instead, swap this for `ANTHROPIC_AUTH_TOKEN`.
+- `ANTHROPIC_MODEL` / `ANTHROPIC_SMALL_FAST_MODEL` — model IDs in the form the proxy expects (some proxies require a provider prefix such as `vertex_ai/` or `bedrock/`).
+
+On each run `claude-container.sh` checks for `~/.claude-llmproxy.env`. If present it is forwarded into the container with `--env-file` and Claude uses the proxy. If absent, the container starts as before and Claude prompts for the usual web login. To go back to web login, rename or delete the file.
+
+Lock the file down so other users on the host can't read your key:
+
+```bash
+chmod 600 ~/.claude-llmproxy.env
+```
+
+Keep the file outside the project directory — the sandbox only mounts your working folder, so the key is never visible to Claude as a file, only as environment variables in the running process.
+
 ## Security Notes
 
 **SSH keys** are not mounted. GitHub access uses `GH_TOKEN` from the CLI, and Git is configured to translate `git@github.com:` to `https://github.com/` globally.

@@ -157,6 +157,20 @@ if $START_SHELL; then
   SHELL_MODE_ARG="-e SHELL_MODE=1"
 fi
 
+# --- LLM proxy (optional) ---
+# If ~/.claude-llmproxy.env exists, route Claude through an Anthropic-
+# compatible proxy using a personal API key instead of the OAuth web
+# login. Otherwise the container starts as before and Claude prompts
+# for /login. The file is forwarded as-is via --env-file; expected
+# variables are ANTHROPIC_BASE_URL, ANTHROPIC_API_KEY, ANTHROPIC_MODEL,
+# and ANTHROPIC_SMALL_FAST_MODEL.
+LLMPROXY_ENV_ARG=""
+LLMPROXY_ENV_FILE="$HOME/.claude-llmproxy.env"
+if [ -f "$LLMPROXY_ENV_FILE" ]; then
+  LLMPROXY_ENV_ARG="--env-file $LLMPROXY_ENV_FILE"
+  echo -e "${GREEN}Using LLM proxy (from $LLMPROXY_ENV_FILE)${NC}"
+fi
+
 GITCONFIG_MOUNT_ARG=""
 if [ -f "$HOME/.gitconfig" ]; then
   GITCONFIG_MOUNT_ARG="-v $HOME/.gitconfig:$CHOME/.gitconfig.host:ro"
@@ -184,6 +198,7 @@ podman run --rm -it \
   $PORT_ARGS \
   \
   $GH_TOKEN_ARG \
+  $LLMPROXY_ENV_ARG \
   $SHELL_MODE_ARG \
   $PODMAN_ENV \
   -e "COLORTERM=truecolor" \
