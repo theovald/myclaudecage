@@ -64,8 +64,9 @@ myclaude -p "run the fastapi server"
 - `claude-playwright-cache` volume — Playwright browsers (`~/.cache/ms-playwright`)
 - `claude-mise-data` volume — Node versions installed by mise
 - `claude-precommit-cache` volume — pre-commit hook environments
-- Ports `3000`, `4173`, `4200`, `5005`, `5173`, `8000`, `8080` — mapped if free on the host.
-  Dev servers must bind to `0.0.0.0` (e.g. `npm run dev -- --host 0.0.0.0`) to be
+- Ports `3000`, `4173`, `4200`, `5005`, `5173`, `8000`, `8080` — mapped to `127.0.0.1` on the host if free,
+  so they are not reachable from the local network. Dev servers must bind to
+  `0.0.0.0` inside the container (e.g. `npm run dev -- --host 0.0.0.0`) to be
   reachable from the host browser.
 
 ## Screenshots and visual inspection

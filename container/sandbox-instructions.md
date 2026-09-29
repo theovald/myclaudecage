@@ -35,8 +35,8 @@ no sudo). Only the mounted project folder is visible from the host.
 
 ## Dev servers
 
-- Ports 3000, 4173, 4200, 5005, 5173, 8000 and 8080 are published to the host
-  when free.
+- Ports 3000, 4173, 4200, 5005, 5173, 8000 and 8080 are published to the
+  host's 127.0.0.1 when free, never to the local network.
 - For the user to open a server in the host browser it must bind to
   `0.0.0.0`: `npm run dev -- --host 0.0.0.0` (Vite),
   `uvicorn app:app --host 0.0.0.0`. Playwright inside the sandbox can use

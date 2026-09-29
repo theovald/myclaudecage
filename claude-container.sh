@@ -124,7 +124,7 @@ is_port_in_use() {
 }
 for port in $CONTAINER_PORTS; do
   if ! is_port_in_use "$port"; then
-    PORT_ARGS="$PORT_ARGS -p $port:$port"
+    PORT_ARGS="$PORT_ARGS -p 127.0.0.1:$port:$port"
   else
     echo -e "${YELLOW}Warning: port $port is in use on the host, skipping mapping.${NC}"
   fi
