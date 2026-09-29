@@ -38,6 +38,12 @@ if [ -n "$GH_TOKEN" ] && command -v gh >/dev/null 2>&1; then
   gh auth setup-git 2>/dev/null || true
 fi
 
+# Fetch the Chromium revision the latest Playwright MCP expects, in the
+# background so startup is not delayed. A no-op when it is already cached.
+mkdir -p "$HOME/.cache"
+nohup npx -y @playwright/mcp@latest install-browser chromium \
+  >"$HOME/.cache/playwright-browser-update.log" 2>&1 &
+
 if [ -n "$SHELL_MODE" ]; then
   echo "Interactive shell mode started."
   exec bash

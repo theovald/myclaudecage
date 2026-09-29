@@ -113,7 +113,7 @@ else
 fi
 
 # --- Check available ports ---
-CONTAINER_PORTS="3000 4200 5005 8000 8080"
+CONTAINER_PORTS="3000 4173 4200 5005 5173 8000 8080"
 PORT_ARGS=""
 is_port_in_use() {
   if command -v ss &>/dev/null; then
@@ -183,6 +183,7 @@ podman run --rm -it \
   --hostname claude-sandbox \
   --userns=keep-id \
   --dns 1.1.1.1 --dns 8.8.8.8 \
+  --shm-size=1g \
   \
   -v "$PROJECT_FOLDER:$CHOME/$PROJECT_NAME" \
   $AGENTS_MOUNT_ARG \
@@ -192,6 +193,8 @@ podman run --rm -it \
   -v "$HOME/.claude.json.backup:$CHOME/.claude.json.backup" \
   \
   -v "claude-uv-cache:$CHOME/.local/share/uv" \
+  -v "claude-npm-cache:$CHOME/.npm" \
+  -v "claude-playwright-cache:$CHOME/.cache/ms-playwright" \
   \
   $GITCONFIG_MOUNT_ARG \
   \

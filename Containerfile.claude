@@ -49,6 +49,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 libxshmfence1 fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
+# --- Screenshot, PDF and image tooling ---
+# poppler-utils (pdftoppm) and imagemagick let Claude render PDFs and slides
+# to PNG and inspect them. The fonts make screenshots of Norwegian text,
+# emoji and Kantega decks (Source Sans 3) render correctly.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    poppler-utils imagemagick \
+    fonts-noto-core fonts-noto-color-emoji fonts-dejavu-core \
+    fonts-adobe-sourcesans3 \
+    ripgrep fd-find tree \
+    postgresql-client \
+    && ln -s /usr/bin/fdfind /usr/local/bin/fd \
+    && rm -rf /var/lib/apt/lists/*
+
 # --- LibreOffice (headless, for document conversion) ---
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice-core libreoffice-common \
@@ -72,6 +85,15 @@ WORKDIR /home/${USERNAME}
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/home/${USERNAME}/.local/bin" sh
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 
+# --- Playwright browsers for the Playwright MCP plugin and scripts ---
+# Google Chrome has no Linux arm64 build, so the MCP must use Playwright's
+# bundled Chromium, headless. The browser revision the MCP needs is
+# preinstalled here; entrypoint.sh fetches newer revisions into the
+# persistent claude-playwright-cache volume when @playwright/mcp updates.
+ENV PLAYWRIGHT_MCP_BROWSER=chromium
+ENV PLAYWRIGHT_MCP_HEADLESS=true
+RUN npx -y @playwright/mcp@latest install-browser chromium
+
 # --- Claude Code ---
 USER root
 # The native installer (https://claude.ai/install.sh) runs out of memory (OOM Exit 137)
@@ -82,6 +104,9 @@ RUN ARCH=$(dpkg --print-architecture) && \
     VERSION=$(curl -fsSL https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/latest) && \
     curl -fsSL -o /usr/local/bin/claude "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/${VERSION}/${CLAUDE_ARCH}/claude" && \
     chmod +x /usr/local/bin/claude
+
+# Managed CLAUDE.md: tells Claude inside the sandbox what tools it has.
+COPY sandbox-instructions.md /etc/claude-code/CLAUDE.md
 USER ${USERNAME}
 
 COPY --chown=${USERNAME}:${USERNAME} entrypoint.sh /home/${USERNAME}/.entrypoint.sh
