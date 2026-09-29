@@ -7,7 +7,12 @@ no sudo). Only the mounted project folder is visible from the host.
 
 - Python: `uv` (install other versions with `uv python install 3.12`).
   The uv cache is a persistent volume.
-- Node.js 24 with npm and npx. Vite, Next and similar dev servers work.
+- Node.js via mise shims: 24 by default, or the version in a project's
+  `.nvmrc` / `.node-version` / `mise.toml`, installed on first use.
+  Vite, Next and similar dev servers work.
+- Lint and hooks: `ruff`, `pre-commit`, `markdownlint-cli2`. Run
+  `pre-commit run --all-files` before handing work back when the project has
+  a `.pre-commit-config.yaml`.
 - LibreOffice headless (`soffice`), poppler (`pdftoppm`), ImageMagick
   (`magick`), `psql`, `rg`, `fd`, `jq`, `gh`.
 

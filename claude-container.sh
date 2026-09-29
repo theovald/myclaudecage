@@ -195,6 +195,8 @@ podman run --rm -it \
   -v "claude-uv-cache:$CHOME/.local/share/uv" \
   -v "claude-npm-cache:$CHOME/.npm" \
   -v "claude-playwright-cache:$CHOME/.cache/ms-playwright" \
+  -v "claude-mise-data:$CHOME/.local/share/mise" \
+  -v "claude-precommit-cache:$CHOME/.cache/pre-commit" \
   \
   $GITCONFIG_MOUNT_ARG \
   \

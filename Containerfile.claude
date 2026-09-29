@@ -73,6 +73,23 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
+# --- mise (per-project Node versions from .nvmrc, .node-version, mise.toml) ---
+# Version and digest pinned. To bump, change MISE_VERSION and both SHA256
+# values from the release's SHASUMS256.txt.
+RUN MISE_VERSION=2026.9.17 && \
+    case "$(dpkg --print-architecture)" in \
+      amd64) TARBALL="mise-v${MISE_VERSION}-linux-x64.tar.gz"; \
+             SHA256="8d1bcbc0b2ba167ee765e7410502c3f89974d0195eb8ec74537bc93bb367420d" ;; \
+      arm64) TARBALL="mise-v${MISE_VERSION}-linux-arm64.tar.gz"; \
+             SHA256="46717187f93d4ebfff8b87a30da3f5939af995057c0c1a855e968f0ee4d19c88" ;; \
+      *) echo "unsupported arch" >&2; exit 1 ;; \
+    esac && \
+    curl -fsSL -o /tmp/mise.tgz "https://github.com/jdx/mise/releases/download/v${MISE_VERSION}/${TARBALL}" && \
+    echo "${SHA256}  /tmp/mise.tgz" | sha256sum -c - && \
+    tar -C /tmp -xzf /tmp/mise.tgz mise/bin/mise && \
+    install -m 0755 /tmp/mise/bin/mise /usr/local/bin/mise && \
+    rm -rf /tmp/mise /tmp/mise.tgz
+
 COPY setup_user.sh /tmp/setup_user.sh
 RUN chmod +x /tmp/setup_user.sh \
     && /tmp/setup_user.sh ${USERNAME} \
@@ -84,6 +101,30 @@ WORKDIR /home/${USERNAME}
 # --- Install uv ---
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/home/${USERNAME}/.local/bin" sh
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
+
+# --- Node via mise shims ---
+# Node 24 is the global default. A project with .nvmrc or .node-version gets
+# that version, installed on first use into the claude-mise-data volume.
+# Python versions stay with uv, which reads .python-version itself.
+ENV MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS=node
+ENV MISE_TRUSTED_CONFIG_PATHS=/
+ENV PATH="/home/${USERNAME}/.local/share/mise/shims:${PATH}"
+RUN mise use -g node@24 && node --version
+
+# --- Lint and hook tools (ruff, pre-commit, markdownlint-cli2) ---
+# Installed outside ~/.local/share/uv, which the claude-uv-cache volume
+# shadows at runtime. PATH is reset for root so npm does not resolve node
+# through the mise shims, which have no version configured for root.
+USER root
+RUN export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && \
+    UV_TOOL_DIR=/opt/uv-tools UV_TOOL_BIN_DIR=/usr/local/bin \
+      /home/${USERNAME}/.local/bin/uv tool install --python /usr/bin/python3 ruff && \
+    UV_TOOL_DIR=/opt/uv-tools UV_TOOL_BIN_DIR=/usr/local/bin \
+      /home/${USERNAME}/.local/bin/uv tool install --python /usr/bin/python3 pre-commit && \
+    /usr/bin/npm install -g markdownlint-cli2 && \
+    ruff --version && pre-commit --version && command -v markdownlint-cli2
+USER ${USERNAME}
+RUN mkdir -p /home/${USERNAME}/.cache/pre-commit
 
 # --- Playwright browsers for the Playwright MCP plugin and scripts ---
 # Google Chrome has no Linux arm64 build, so the MCP must use Playwright's

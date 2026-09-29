@@ -62,6 +62,8 @@ myclaude -p "run the fastapi server"
 - `claude-uv-cache` volume — isolated Python package cache
 - `claude-npm-cache` volume — npm/npx cache, so `npx` tools start fast
 - `claude-playwright-cache` volume — Playwright browsers (`~/.cache/ms-playwright`)
+- `claude-mise-data` volume — Node versions installed by mise
+- `claude-precommit-cache` volume — pre-commit hook environments
 - Ports `3000`, `4173`, `4200`, `5005`, `5173`, `8000`, `8080` — mapped if free on the host.
   Dev servers must bind to `0.0.0.0` (e.g. `npm run dev -- --host 0.0.0.0`) to be
   reachable from the host browser.
@@ -74,6 +76,18 @@ Chrome has no Linux arm64 build. Claude can navigate to a local dev server, save
 screenshot and open the PNG itself. On each start, `entrypoint.sh` fetches the
 Chromium revision the latest `@playwright/mcp` expects in the background (a no-op
 when it is cached).
+
+## Node versions and lint tools
+
+Node runs through [mise](https://mise.jdx.dev) shims. Node 24 is the default; a
+project with `.nvmrc`, `.node-version` or `mise.toml` gets that version, downloaded
+on first use and kept in the `claude-mise-data` volume. Python versions are handled
+by `uv`, which reads `.python-version`.
+
+`ruff`, `pre-commit` and `markdownlint-cli2` are preinstalled, so pre-commit hooks
+run inside the sandbox without extra setup.
+
+## Other tools
 
 Also included: `pdftoppm` (poppler), ImageMagick, `psql`, `fd`, `rg`, and fonts for
 Norwegian text, emoji and Source Sans 3. A managed `/etc/claude-code/CLAUDE.md`
